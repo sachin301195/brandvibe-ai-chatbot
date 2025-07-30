@@ -18,6 +18,8 @@ const BrandVibeUI: React.FC = () => {
     }
   ]);
   const [inputValue, setInputValue] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -54,6 +56,23 @@ const BrandVibeUI: React.FC = () => {
     }
   };
 
+  const handleSettingsClick = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setApiKeyInput('');
+  };
+
+  const handleSaveApiKey = () => {
+    if (apiKeyInput.trim()) {
+      localStorage.setItem('brandvibe_api_key', apiKeyInput.trim());
+      setIsModalOpen(false);
+      setApiKeyInput('');
+    }
+  };
+
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
@@ -63,6 +82,25 @@ const BrandVibeUI: React.FC = () => {
       <div className={styles.header}>
         <h1 className={styles.title}>BrandVibe AI</h1>
         <p className={styles.subtitle}>Your AI Brand Assistant</p>
+        <button 
+          className={styles.settingsButton}
+          onClick={handleSettingsClick}
+          aria-label="Settings"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
       </div>
       
       <div className={styles.messagesContainer}>
@@ -114,6 +152,69 @@ const BrandVibeUI: React.FC = () => {
           </button>
         </div>
       </form>
+
+      {/* Settings Modal */}
+      {isModalOpen && (
+        <div className={styles.modalOverlay} onClick={handleModalClose}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>Settings</h2>
+              <button 
+                className={styles.modalCloseButton}
+                onClick={handleModalClose}
+                aria-label="Close modal"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            
+            <div className={styles.modalBody}>
+              <div className={styles.settingsSection}>
+                <h3 className={styles.sectionTitle}>API Integration</h3>
+                <div className={styles.inputGroup}>
+                  <label htmlFor="apiKey" className={styles.inputLabel}>
+                    API Key
+                  </label>
+                  <input
+                    id="apiKey"
+                    type="password"
+                    value={apiKeyInput}
+                    onChange={(e) => setApiKeyInput(e.target.value)}
+                    placeholder="Enter your API key"
+                    className={styles.modalInput}
+                  />
+                  <p className={styles.helpText}>
+                    Your API key is stored securely in your browser's local storage and is never sent to our servers.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className={styles.modalFooter}>
+              <button
+                type="button"
+                className={styles.saveButton}
+                onClick={handleSaveApiKey}
+                disabled={!apiKeyInput.trim()}
+              >
+                Save & Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
