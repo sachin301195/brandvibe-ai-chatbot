@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import ReactMarkdown from 'react-markdown';
 import styles from './BrandVibeUI.module.css';
 
 interface Message {
@@ -20,6 +22,7 @@ const BrandVibeUI: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -30,29 +33,80 @@ const BrandVibeUI: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputValue.trim()) {
-      const newMessage: Message = {
-        id: Date.now().toString(),
-        text: inputValue.trim(),
-        isUser: true,
+    if (!inputValue.trim()) return;
+
+    // 1. Create the user's new message and update the UI immediately
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      text: inputValue.trim(),
+      isUser: true,
+      timestamp: new Date()
+    };
+         setMessages(prev => [...prev, userMessage]);
+     
+     // 2. Prepare the data for the API
+     const currentInput = inputValue.trim();
+     setInputValue(''); // Clear the input field after grabbing the value
+     
+     // Show typing indicator
+     setIsTyping(true);
+
+    const apiKey = localStorage.getItem('brandvibe_api_key');
+    if (!apiKey) {
+      // Handle missing API key
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: 'Please add your Google AI API key in the settings.',
+        isUser: false,
         timestamp: new Date()
       };
+             setMessages(prev => [...prev, errorMessage]);
+       setIsTyping(false);
+       return;
+    }
+    
+    // 3. IMPORTANT: Format the history for the API call
+    // We slice(1) to remove the initial AI greeting message.
+    const formattedHistory = messages
+      .slice(1) 
+      .map(message => ({
+        role: message.isUser ? "user" : "model",
+        parts: [{ text: message.text }]
+      }));
+
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
       
-      setMessages(prev => [...prev, newMessage]);
-      setInputValue('');
+      // 4. Start the chat with the CORRECTED history
+      const chat = model.startChat({ history: formattedHistory });
       
-      // Simulate AI response (you can replace this with actual API call)
-      setTimeout(() => {
-        const aiResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          text: 'Thank you for your message! I\'m processing your request...',
-          isUser: false,
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, aiResponse]);
-      }, 1000);
+      // 5. Send only the user's NEW message
+      const result = await chat.sendMessage(currentInput);
+      const response = result.response;
+      const aiText = response.text();
+      
+             const aiResponse: Message = {
+         id: (Date.now() + 1).toString(),
+         text: aiText,
+         isUser: false,
+         timestamp: new Date()
+       };
+       setMessages(prev => [...prev, aiResponse]);
+       setIsTyping(false);
+
+    } catch (error) {
+      console.error("Gemini API Error:", error); // Log the actual error for debugging
+             const errorMessage: Message = {
+         id: (Date.now() + 1).toString(),
+         text: 'Error connecting to AI service. Please check your API key or project setup.',
+         isUser: false,
+         timestamp: new Date()
+       };
+       setMessages(prev => [...prev, errorMessage]);
+       setIsTyping(false);
     }
   };
 
@@ -110,17 +164,35 @@ const BrandVibeUI: React.FC = () => {
               key={message.id}
               className={`${styles.message} ${message.isUser ? styles.userMessage : styles.aiMessage}`}
             >
-              <div className={styles.messageContent}>
-                <p className={styles.messageText}>{message.text}</p>
-                <span className={styles.timestamp}>
-                  {formatTime(message.timestamp)}
-                </span>
-              </div>
+                             <div className={styles.messageContent}>
+                 <div className={styles.messageText}>
+                   <ReactMarkdown>
+                     {message.text}
+                   </ReactMarkdown>
+                 </div>
+                 <span className={styles.timestamp}>
+                   {formatTime(message.timestamp)}
+                 </span>
+               </div>
             </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
+                     ))}
+           
+           {/* Typing Indicator */}
+           {isTyping && (
+             <div className={`${styles.message} ${styles.aiMessage}`}>
+               <div className={styles.messageContent}>
+                 <div className={styles.typingIndicator}>
+                   <div className={styles.typingDot}></div>
+                   <div className={styles.typingDot}></div>
+                   <div className={styles.typingDot}></div>
+                 </div>
+               </div>
+             </div>
+           )}
+           
+           <div ref={messagesEndRef} />
+         </div>
+       </div>
       
       <form className={styles.inputForm} onSubmit={handleSubmit}>
         <div className={styles.inputContainer}>

@@ -24,7 +24,7 @@
 
 .title {
   margin: 0;
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 700;
   background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
@@ -34,7 +34,7 @@
 
 .subtitle {
   margin: 0.5rem 0 0 0;
-  font-size: 1rem;
+  font-size: 0.875rem;
   color: rgba(255, 255, 255, 0.7);
   font-weight: 400;
 }
@@ -155,7 +155,7 @@
 
 .messageText {
   margin: 0 0 0.5rem 0;
-  font-size: 1rem;
+  font-size: 0.9rem;
   line-height: 1.5;
   word-wrap: break-word;
 }
@@ -190,7 +190,7 @@
   border-radius: 2rem;
   background: rgba(255, 255, 255, 0.1);
   color: white;
-  font-size: 1rem;
+  font-size: 0.9rem;
   outline: none;
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
@@ -282,7 +282,7 @@
 
 .modalTitle {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
   color: white;
 }
@@ -322,7 +322,7 @@
 
 .sectionTitle {
   margin: 0 0 1rem 0;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
 }
@@ -346,7 +346,7 @@
   border-radius: 0.5rem;
   background: rgba(255, 255, 255, 0.1);
   color: white;
-  font-size: 1rem;
+  font-size: 0.9rem;
   outline: none;
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
@@ -384,7 +384,7 @@
   border-radius: 0.5rem;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -493,7 +493,46 @@
   }
   
   .modalTitle {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
+  }
+}
+
+/* Typing Indicator */
+.typingIndicator {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.typingDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  animation: typingBounce 1.4s infinite ease-in-out;
+}
+
+.typingDot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typingDot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.typingDot:nth-child(3) {
+  animation-delay: 0s;
+}
+
+@keyframes typingBounce {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
   }
 }
 
