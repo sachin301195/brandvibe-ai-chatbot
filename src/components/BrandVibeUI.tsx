@@ -14,7 +14,7 @@ const BrandVibeUI: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: 'Hello! I\'m BrandVibe AI. How can I help you with your brand today?',
+      text: 'Welcome to BrandVibe AI! What creative asset are you looking to brainstorm today?',
       isUser: false,
       timestamp: new Date()
     }
@@ -67,14 +67,27 @@ const BrandVibeUI: React.FC = () => {
        return;
     }
     
-    // 3. IMPORTANT: Format the history for the API call
+    // 3. Define the system prompt for BrandVibe AI personality
+    const systemPrompt = "You are BrandVibe AI, an expert creative strategist. Your persona is collaborative, insightful, and professional. Your mission is to help users craft detailed, powerful prompts for generating on-brand content (like logos, ad copy, or social media images). Your process is to always guide, never just answer. When a user gives you a simple idea, you must first ask clarifying questions to understand the brand's 'vibe'. Ask about things like: Target Audience, Brand Voice, Visual Style, and any key elements to include. Only after gathering these details should you synthesize them into a final, structured prompt for the user.";
+
+    // 4. IMPORTANT: Format the history for the API call
     // We slice(1) to remove the initial AI greeting message.
-    const formattedHistory = messages
-      .slice(1) 
-      .map(message => ({
-        role: message.isUser ? "user" : "model",
-        parts: [{ text: message.text }]
-      }));
+    const formattedHistory = [
+      {
+        role: "user",
+        parts: [{ text: systemPrompt }]
+      },
+      {
+        role: "model", 
+        parts: [{ text: "I understand. I am BrandVibe AI, ready to help you craft detailed, powerful prompts for generating on-brand content. I will guide you through the process by asking clarifying questions about your brand's vibe, target audience, brand voice, visual style, and key elements before creating a structured prompt." }]
+      },
+      ...messages
+        .slice(1) 
+        .map(message => ({
+          role: message.isUser ? "user" : "model",
+          parts: [{ text: message.text }]
+        }))
+    ];
 
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
