@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import ReactMarkdown from 'react-markdown';
 import styles from './BrandVibeUI.module.css';
 
 interface Message {
@@ -18,6 +20,9 @@ const BrandVibeUI: React.FC = () => {
     }
   ]);
   const [inputValue, setInputValue] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -28,29 +33,97 @@ const BrandVibeUI: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputValue.trim()) {
-      const newMessage: Message = {
-        id: Date.now().toString(),
-        text: inputValue.trim(),
-        isUser: true,
+    if (!inputValue.trim()) return;
+
+    // 1. Create the user's new message and update the UI immediately
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      text: inputValue.trim(),
+      isUser: true,
+      timestamp: new Date()
+    };
+         setMessages(prev => [...prev, userMessage]);
+     
+     // 2. Prepare the data for the API
+     const currentInput = inputValue.trim();
+     setInputValue(''); // Clear the input field after grabbing the value
+     
+     // Show typing indicator
+     setIsTyping(true);
+
+    const apiKey = localStorage.getItem('brandvibe_api_key');
+    if (!apiKey) {
+      // Handle missing API key
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: 'Please add your Google AI API key in the settings.',
+        isUser: false,
         timestamp: new Date()
       };
+             setMessages(prev => [...prev, errorMessage]);
+       setIsTyping(false);
+       return;
+    }
+    
+    // 3. IMPORTANT: Format the history for the API call
+    // We slice(1) to remove the initial AI greeting message.
+    const formattedHistory = messages
+      .slice(1) 
+      .map(message => ({
+        role: message.isUser ? "user" : "model",
+        parts: [{ text: message.text }]
+      }));
+
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
       
-      setMessages(prev => [...prev, newMessage]);
-      setInputValue('');
+      // 4. Start the chat with the CORRECTED history
+      const chat = model.startChat({ history: formattedHistory });
       
-      // Simulate AI response (you can replace this with actual API call)
-      setTimeout(() => {
-        const aiResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          text: 'Thank you for your message! I\'m processing your request...',
-          isUser: false,
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, aiResponse]);
-      }, 1000);
+      // 5. Send only the user's NEW message
+      const result = await chat.sendMessage(currentInput);
+      const response = result.response;
+      const aiText = response.text();
+      
+             const aiResponse: Message = {
+         id: (Date.now() + 1).toString(),
+         text: aiText,
+         isUser: false,
+         timestamp: new Date()
+       };
+       setMessages(prev => [...prev, aiResponse]);
+       setIsTyping(false);
+
+    } catch (error) {
+      console.error("Gemini API Error:", error); // Log the actual error for debugging
+             const errorMessage: Message = {
+         id: (Date.now() + 1).toString(),
+         text: 'Error connecting to AI service. Please check your API key or project setup.',
+         isUser: false,
+         timestamp: new Date()
+       };
+       setMessages(prev => [...prev, errorMessage]);
+       setIsTyping(false);
+    }
+  };
+
+  const handleSettingsClick = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setApiKeyInput('');
+  };
+
+  const handleSaveApiKey = () => {
+    if (apiKeyInput.trim()) {
+      localStorage.setItem('brandvibe_api_key', apiKeyInput.trim());
+      setIsModalOpen(false);
+      setApiKeyInput('');
     }
   };
 
@@ -63,6 +136,25 @@ const BrandVibeUI: React.FC = () => {
       <div className={styles.header}>
         <h1 className={styles.title}>BrandVibe AI</h1>
         <p className={styles.subtitle}>Your AI Brand Assistant</p>
+        <button 
+          className={styles.settingsButton}
+          onClick={handleSettingsClick}
+          aria-label="Settings"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
       </div>
       
       <div className={styles.messagesContainer}>
@@ -72,17 +164,35 @@ const BrandVibeUI: React.FC = () => {
               key={message.id}
               className={`${styles.message} ${message.isUser ? styles.userMessage : styles.aiMessage}`}
             >
-              <div className={styles.messageContent}>
-                <p className={styles.messageText}>{message.text}</p>
-                <span className={styles.timestamp}>
-                  {formatTime(message.timestamp)}
-                </span>
-              </div>
+                             <div className={styles.messageContent}>
+                 <div className={styles.messageText}>
+                   <ReactMarkdown>
+                     {message.text}
+                   </ReactMarkdown>
+                 </div>
+                 <span className={styles.timestamp}>
+                   {formatTime(message.timestamp)}
+                 </span>
+               </div>
             </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
+                     ))}
+           
+           {/* Typing Indicator */}
+           {isTyping && (
+             <div className={`${styles.message} ${styles.aiMessage}`}>
+               <div className={styles.messageContent}>
+                 <div className={styles.typingIndicator}>
+                   <div className={styles.typingDot}></div>
+                   <div className={styles.typingDot}></div>
+                   <div className={styles.typingDot}></div>
+                 </div>
+               </div>
+             </div>
+           )}
+           
+           <div ref={messagesEndRef} />
+         </div>
+       </div>
       
       <form className={styles.inputForm} onSubmit={handleSubmit}>
         <div className={styles.inputContainer}>
@@ -114,6 +224,69 @@ const BrandVibeUI: React.FC = () => {
           </button>
         </div>
       </form>
+
+      {/* Settings Modal */}
+      {isModalOpen && (
+        <div className={styles.modalOverlay} onClick={handleModalClose}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>Settings</h2>
+              <button 
+                className={styles.modalCloseButton}
+                onClick={handleModalClose}
+                aria-label="Close modal"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            
+            <div className={styles.modalBody}>
+              <div className={styles.settingsSection}>
+                <h3 className={styles.sectionTitle}>API Integration</h3>
+                <div className={styles.inputGroup}>
+                  <label htmlFor="apiKey" className={styles.inputLabel}>
+                    API Key
+                  </label>
+                  <input
+                    id="apiKey"
+                    type="password"
+                    value={apiKeyInput}
+                    onChange={(e) => setApiKeyInput(e.target.value)}
+                    placeholder="Enter your API key"
+                    className={styles.modalInput}
+                  />
+                  <p className={styles.helpText}>
+                    Your API key is stored securely in your browser's local storage and is never sent to our servers.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className={styles.modalFooter}>
+              <button
+                type="button"
+                className={styles.saveButton}
+                onClick={handleSaveApiKey}
+                disabled={!apiKeyInput.trim()}
+              >
+                Save & Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
