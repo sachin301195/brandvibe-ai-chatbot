@@ -43,7 +43,7 @@ This method allowed for rapid development while I focused on the higher-level pr
 
 1.  Clone the repository:
     ```bash
-    git clone [https://github.com/sachin301195/brandvibe-ai-chatbot.git](https://github.com/sachin301195/brandvibe-ai-chatbot.git)
+    git clone https://github.com/sachin301195/brandvibe-ai-chatbot.git
     ```
 2.  Navigate to the project directory:
     ```bash
