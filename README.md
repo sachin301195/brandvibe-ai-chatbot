@@ -2,7 +2,7 @@
 
 A submission for the Olivia AI "Vibe Coder" coding challenge. BrandVibe AI is a creative partner designed to help founders, marketers, and designers craft compelling prompts for generating on-brand content.
 
-**[➡️ Live Demo URL Will Go Here]**
+**https://brandvibe-ai-chatbot.vercel.app/**
 
 ---
 
